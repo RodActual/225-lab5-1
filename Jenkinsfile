@@ -40,6 +40,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
+                    sh 'sed -i "s/BUILD_ID_PLACEHOLDER/${BUILD_NUMBER}/g" templates/index.html'
                     docker.withRegistry('https://registry.hub.docker.com', "${DOCKER_CREDENTIALS_ID}") {
                         docker.build("${DOCKER_IMAGE}:${IMAGE_TAG}")
                     }
