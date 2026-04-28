@@ -23,7 +23,6 @@ pipeline {
                 stage('Security Scan') {
                     steps {
                         echo 'Running Bandit...'
-                        // Using 'python3 -m pip' ensures we use the correct path
                         sh 'python3 -m pip install --user bandit'
                         sh 'python3 -m bandit -r . -ll'
                     }
@@ -37,11 +36,10 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Criteria: Pipeline Contains Docker Build
                     docker.withRegistry('https://registry.hub.docker.com', "${DOCKER_CREDENTIALS_ID}") {
                         docker.build("${DOCKER_IMAGE}:${IMAGE_TAG}")
                     }
@@ -52,18 +50,18 @@ pipeline {
         stage('Push & Deploy') {
             steps {
                 script {
+                    // Push the newly built image
                     docker.withRegistry('https://index.docker.io/v1/', "${DOCKER_CREDENTIALS_ID}") {
                         docker.image("${DOCKER_IMAGE}:${IMAGE_TAG}").push()
                     }
                     
-                    // Criteria: Deployed Project Demonstrated
-                    // Using 'sed' to inject the specific build tag into the YAML
+                    // Update the deployment-dev.yaml to use the new image tag
                     sh "sed -i 's|${DOCKER_IMAGE}:latest|${DOCKER_IMAGE}:${IMAGE_TAG}|' deployment-dev.yaml"
                     
-                    withKubeConfig([credentialsId: 'rodrig99-225']) {
-                        sh "kubectl apply -f deployment-dev.yaml"
-                        sh "kubectl rollout status deployment/flask-deployment"
-                    }
+                    // Deploy using the native method from your previous lab
+                    def kubeConfig = readFile(KUBECONFIG)
+                    sh "kubectl apply -f deployment-dev.yaml"
+                    sh "kubectl rollout status deployment/flask-deployment"
                 }
             }
         }
