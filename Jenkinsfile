@@ -23,18 +23,21 @@ pipeline {
                 stage('Security Scan') {
                     steps {
                         echo 'Running Bandit...'
-                        sh 'pip install bandit && bandit -r . -ll'
+                        // Using 'python3 -m pip' ensures we use the correct path
+                        sh 'python3 -m pip install --user bandit'
+                        sh 'python3 -m bandit -r . -ll'
                     }
                 }
                 stage('Linting') {
                     steps {
                         echo 'Running Flake8...'
-                        sh 'pip install flake8 && flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics'
+                        sh 'python3 -m pip install --user flake8'
+                        sh 'python3 -m flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics'
                     }
                 }
             }
         }
-
+        
         stage('Build Docker Image') {
             steps {
                 script {
